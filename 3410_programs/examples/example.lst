@@ -1,0 +1,195 @@
+Microsoft (R) Macro Assembler Version 6.15.8803		    09/15/18 13:04:25
+example.asm						     Page 1 - 1
+
+
+				; Example assembly language program -- adds two numbers
+				; Author:  R. Detmer
+				; Date:    revised 7/97
+
+				.386
+				.MODEL FLAT
+
+				ExitProcess PROTO NEAR32 stdcall, dwExitCode:DWORD
+
+				INCLUDE io.h            ; header file for input/output
+			      C ; IO.H -- header file for I/O macros
+			      C ; 32-bit version for flat memory model
+			      C ; R. Detmer   last revised 8/2000
+			      C .NOLIST     ; turn off listing
+			      C .LIST        ; begin listing
+			      C 
+				INCLUDE debug.h
+			      C INCLUDE io.h
+			      C ; IO.H -- header file for I/O macros
+			      C ; 32-bit version for flat memory model
+			      C ; R. Detmer   last revised 8/2000
+			      C .NOLIST     ; turn off listing
+			      C .LIST        ; begin listing
+			      C 
+			      C 
+ = 0000000D		      C CR          EQU    0Dh   ; carriage return character
+ = 0000000A		      C LF          EQU    0Ah   ; linefeed character
+			      C 
+ 00000000		      C .DATA
+ 00000000 0D 0A 00	      C carriage    BYTE     CR, LF, 0
+ 00000003  0000000D [	      C text        BYTE     13 DUP(?)
+	    00
+	   ]
+			      C 
+			      C outputW    	MACRO   var
+			      C                    itoa text, var
+			      C                    output text
+			      C                    output carriage
+			      C                 ENDM
+			      C 
+			      C outputD  	MACRO  var
+			      C                    dtoa text, var
+			      C                    output text
+			      C                    output carriage
+			      C          	ENDM
+			      C 
+			      C inputW          MACRO  prompt, location
+			      C                    output prompt
+			      C                    input text, 8
+			      C                    atoi text
+			      C                    mov location, ax
+			      C                 ENDM
+			      C 
+			      C inputD          MACRO  prompt, location
+			      C                    output prompt
+			      C                    input text, 13
+			      C                    atod text
+			      C                    mov location, eax
+			      C                 ENDM
+			      C 
+
+ = 0000000D			cr      EQU     0dh     ; carriage return character
+ = 0000000A			Lf      EQU     0ah     ; line feed
+
+				.STACK  4096            ; reserve 4096-byte stack
+
+ 00000010			.DATA                   ; reserve storage for data
+ 00000010 00000000		number1 DWORD   ?
+ 00000014 00000000		number2 DWORD   ?
+ 00000018 45 6E 74 65 72	prompt1 BYTE    "Enter first number:  ", 0
+	   20 66 69 72 73
+	   74 20 6E 75 6D
+	   62 65 72 3A 20
+	   20 00
+ 0000002E 45 6E 74 65 72	prompt2 BYTE    "Enter second number:  ", 0
+	   20 73 65 63 6F
+	   6E 64 20 6E 75
+	   6D 62 65 72 3A
+	   20 20 00
+ 00000045  00000028 [		string  BYTE    40 DUP (?)
+	    00
+	   ]
+ 0000006D 0D 0A 54 68 65	label1  BYTE    cr, Lf, "The sum is "
+	   20 73 75 6D 20
+	   69 73 20
+ 0000007A  0000000B [		sum     BYTE    11 DUP (?)
+	    00
+	   ]
+ 00000085  0D 0A 00		        BYTE    cr, Lf, 0
+
+ 00000000			.CODE                           ; start of main program code
+ 00000000			_start:
+ 00000000			        ;output  prompt1         ; prompt for first number
+				        ;input   string, 40      ; read ASCII characters
+				        ;atod    string          ; convert to integer
+				        ;mov     number1, eax    ; store in memory
+
+						inputD prompt1, number1
+						
+				        ;output  prompt2         ; repeat for second number
+				        ;input   string, 40
+				        ;atod    string
+				        ;mov     number2, eax
+				        
+						inputD prompt2, number2
+						
+ 00000066  A1 00000010 R	        mov     eax, number1    ; first number to EAX
+ 0000006B  03 05 00000014 R	        add     eax, number2    ; add second number
+				        dtoa    sum, eax        ; convert to ASCII characters
+				        output  label1          ; output label and sum
+
+				        INVOKE  ExitProcess, 0  ; exit with return code 0
+
+ 00000097			PUBLIC _start                   ; make entry point public
+
+				END                             ; end of source code
+
+Microsoft (R) Macro Assembler Version 6.15.8803		    09/15/18 13:04:25
+example.asm						     Symbols 2 - 1
+
+
+
+
+Macros:
+
+                N a m e                 Type
+
+atod . . . . . . . . . . . . . .	Proc
+atoi . . . . . . . . . . . . . .	Proc
+dtoa . . . . . . . . . . . . . .	Proc
+inputD . . . . . . . . . . . . .	Proc
+inputW . . . . . . . . . . . . .	Proc
+input  . . . . . . . . . . . . .	Proc
+itoa . . . . . . . . . . . . . .	Proc
+outputD  . . . . . . . . . . . .	Proc
+outputW  . . . . . . . . . . . .	Proc
+output . . . . . . . . . . . . .	Proc
+
+
+Segments and Groups:
+
+                N a m e                 Size     Length   Align   Combine Class
+
+FLAT . . . . . . . . . . . . . .	GROUP
+STACK  . . . . . . . . . . . . .	32 Bit	 00001000 DWord	  Stack	  'STACK'	 
+_DATA  . . . . . . . . . . . . .	32 Bit	 00000088 DWord	  Public  'DATA'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 00000097 DWord	  Public  'CODE'	
+
+
+Procedures,  parameters and locals:
+
+                N a m e                 Type     Value    Attr
+
+$$$00001 . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 00000097 Private
+ExitProcess  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+@CodeSize  . . . . . . . . . . .	Number	 00000000h   
+@DataSize  . . . . . . . . . . .	Number	 00000000h   
+@Interface . . . . . . . . . . .	Number	 00000000h   
+@Model . . . . . . . . . . . . .	Number	 00000007h   
+@code  . . . . . . . . . . . . .	Text   	 _TEXT
+@data  . . . . . . . . . . . . .	Text   	 FLAT
+@fardata?  . . . . . . . . . . .	Text   	 FLAT
+@fardata . . . . . . . . . . . .	Text   	 FLAT
+@stack . . . . . . . . . . . . .	Text   	 FLAT
+CR . . . . . . . . . . . . . . .	Number	 0000000Dh   
+LF . . . . . . . . . . . . . . .	Number	 0000000Ah   
+_start . . . . . . . . . . . . .	L Near	 00000000 _TEXT	Public
+atodproc . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+atoiproc . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+carriage . . . . . . . . . . . .	Byte	 00000000 _DATA	
+dtoaproc . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+inproc . . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+itoaproc . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+label1 . . . . . . . . . . . . .	Byte	 0000006D _DATA	
+number1  . . . . . . . . . . . .	DWord	 00000010 _DATA	
+number2  . . . . . . . . . . . .	DWord	 00000014 _DATA	
+outproc  . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+prompt1  . . . . . . . . . . . .	Byte	 00000018 _DATA	
+prompt2  . . . . . . . . . . . .	Byte	 0000002E _DATA	
+string . . . . . . . . . . . . .	Byte	 00000045 _DATA	
+sum  . . . . . . . . . . . . . .	Byte	 0000007A _DATA	
+text . . . . . . . . . . . . . .	Byte	 00000003 _DATA	
+
+	   0 Warnings
+	   0 Errors

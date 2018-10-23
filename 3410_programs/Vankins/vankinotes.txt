@@ -1,0 +1,5 @@
+index = (# of columns in grid)*(row-1)+(col-1)
+
+row = index / col + 1
+
+col = index % col + 1

@@ -1,0 +1,477 @@
+Microsoft (R) Macro Assembler Version 6.15.8803		    10/22/18 10:43:14
+vankins.asm						     Page 1 - 1
+
+
+				.386
+				.MODEL FLAT
+
+				ExitProcess PROTO NEAR32 stdcall, dwExitCode:DWORD
+
+				.STACK  4096
+
+				INCLUDE debug.h
+			      C INCLUDE io.h
+			      C ; IO.H -- header file for I/O macros
+			      C ; 32-bit version for flat memory model
+			      C ; R. Detmer   last revised 8/2000
+			      C .NOLIST     ; turn off listing
+			      C .LIST        ; begin listing
+			      C 
+			      C 
+ = 0000000D		      C CR          EQU    0Dh   ; carriage return character
+ = 0000000A		      C LF          EQU    0Ah   ; linefeed character
+			      C 
+ 00000000		      C .DATA
+ 00000000 0D 0A 00	      C carriage    BYTE     CR, LF, 0
+ 00000003  0000000D [	      C text        BYTE     13 DUP(?)
+	    00
+	   ]
+			      C 
+			      C outputW    	MACRO   var
+			      C                    itoa text, var
+			      C                    output text
+			      C                    output carriage
+			      C                 ENDM
+			      C 
+			      C outputD  	MACRO  var
+			      C                    dtoa text, var
+			      C                    output text
+			      C                    output carriage
+			      C          	ENDM
+			      C 
+			      C inputW          MACRO  prompt, location
+			      C                    output prompt
+			      C                    input text, 8
+			      C                    atoi text
+			      C                    mov location, ax
+			      C                 ENDM
+			      C 
+			      C inputD          MACRO  prompt, location
+			      C                    output prompt
+			      C                    input text, 13
+			      C                    atod text
+			      C                    mov location, eax
+			      C                 ENDM
+			      C 
+				INCLUDE io.h
+			      C ; IO.H -- header file for I/O macros
+			      C ; 32-bit version for flat memory model
+			      C ; R. Detmer   last revised 8/2000
+			      C .NOLIST     ; turn off listing
+			      C .LIST        ; begin listing
+			      C 
+				INCLUDE sqrt.h
+			      C .NOLIST     ; turn off listing
+			      C .LIST       
+			      C 
+
+ 00000010			.DATA
+
+ 00000010 0000			row WORD ?
+ 00000012 0000			col WORD ?
+ 00000014 0000			rowcol WORD ?
+
+ 00000016 0000			tmp WORD ?
+ 00000018 0000			curr_row WORD ? 
+ 0000001A 0000			tmp_col WORD ? 
+
+ 0000001C 0000			down WORD ?
+ 0000001E 0000			right WORD ?
+
+ 00000020  00000064 [		vankins_mile WORD 100 DUP (?)
+	    0000
+	   ]
+ 000000E8  00000064 [		solution_grid WORD 100 DUP (?)
+	    0000
+	   ]
+
+ 000001B0  00000014 [		solution_values BYTE 20 DUP (?)
+	    00
+	   ]
+
+				outputW_nocarriage    	MACRO   var
+				                    itoa text, var
+				                    output text
+				                ENDM
+
+				inputW_noprompt         MACRO  location
+				                   input text, 8
+				                   atoi text
+				                   mov location, ax
+				                ENDM
+
+				display_array MACRO arr
+				                    local disp_vankins, linefeed_print, lf_done, done
+
+				                    xor ecx, ecx
+				                    lea ebx, arr
+				                    mov dx, col
+				                    inc dx
+				                    disp_vankins:
+				                        cmp dx, 0
+				                        dec dx
+				                        je linefeed_print
+				                    lf_done:
+				                        cmp cx, rowcol
+				                        jae done
+				                        outputW_nocarriage [ebx]
+				                        inc cx
+				                        add ebx, 2
+				                        jmp disp_vankins
+				                    linefeed_print: 
+				                        output carriage
+				                        mov dx, col
+				                        jmp lf_done
+				                    done:
+				                        output carriage
+				                ENDM
+
+				move_to_index MACRO arr, row_, col_ ;retrieves index of specified position of the 2D array
+				                                    ;stored in ax register
+				                    xor eax, eax
+				                    mov ax, row_
+				                    dec ax
+				                    imul col
+				                    
+				                    mov bx, col_
+				                    dec bx
+				                    
+				                    add ax, bx
+				                    add ax, ax
+
+				                    lea ebx, arr
+				                    add ebx, eax
+				                ENDM
+
+				getElement MACRO matrix_addr, row_, col_, loc ;(loc is where to place the number pulled from the matrix, WORD register or .DATA variable)
+				                    local checkrht, jmprht
+				                    mov ax, col
+				                    inc ax
+				                    cmp col_, ax
+				                    je checkrht
+				                    move_to_index matrix_addr, row_, col_
+				                    mov ax, [ebx]
+				                    mov loc, ax
+				                    jmp jmprht
+				                    checkrht:
+				                        mov ax, 0
+				                        mov loc, ax
+				                    jmprht:
+				                ENDM
+								
+				setElement MACRO matrix_addr, row_, col_, loc ;(loc is where to obtain the number to be placed into the matrix, WORD register or .DATA variable)
+				                    move_to_index matrix_addr, row_, col_
+									mov ax, loc
+				                    mov [ebx], ax
+				                ENDM
+
+				fill_solution_grid MACRO 
+				                    local optimal, cycle_through_row, highdown, highright, done, sol_, jmprht, checkrht
+				                    ;start on last row, last column
+				                    ;fill solution grid from 
+				                    
+				                    xor ecx, ecx
+				                    mov ax, row
+				                    inc ax
+				                    mov curr_row, ax
+
+				                    optimal:
+				                        mov ax, curr_row
+				                        dec ax
+				                        cmp ax, 0
+				                        jbe done
+				                        mov curr_row, ax 
+				                        mov cx, col
+				                        
+				                        cycle_through_row:
+
+				                            ;retrieve down first
+				                            mov ax, curr_row
+				                            inc ax
+											mov tmp, ax
+											mov tmp_col, cx
+				                            getElement solution_grid, tmp, tmp_col, down ;25
+
+				                            ;retrieve right next
+											inc cx
+											mov tmp_col, cx
+				                            getElement solution_grid, curr_row, tmp_col, right
+											dec cx
+											mov tmp_col, cx
+				                            ;compare and fill solution grid
+				                            mov ax, down
+				                            cmp ax, right
+				                            jl highright
+				                            highdown:
+				                                mov ax, down
+				                                jmp sol_
+
+				                            highright:
+				                                mov ax, right
+
+				                            sol_:
+				                            mov tmp, ax
+				                            
+											getElement solution_grid, curr_row, tmp_col, dx
+				                            add tmp, dx
+				                            setElement solution_grid, curr_row, tmp_col, tmp
+				                            dec cx
+											
+				                            jne cycle_through_row
+				                            jmp optimal
+
+				                    done:
+				                ENDM
+
+
+				display_optimal MACRO
+				                    local done, cyclesol, movedown, moveright, moveon
+				                    mov curr_row, 1
+				                    mov tmp_col, 1
+				                    lea ebx, solution_grid
+
+				                    lea ecx, solution_values
+				                    cyclesol:
+				                    
+				                        mov ax, row
+				                        cmp curr_row, ax
+				                        jg done
+				                        mov ax, col
+				                        cmp tmp_col, ax
+				                        jg done
+				                        
+				                        mov ax, curr_row
+				                        inc ax
+				                        mov tmp, ax
+				                        getElement solution_grid, tmp, tmp_col, down
+				                        mov ax, tmp_col
+				                        inc ax
+				                        mov tmp, ax
+				                        getElement solution_grid, curr_row, tmp, right
+				                        mov ax, down
+				                        cmp ax, right
+				                        jl moveright
+				                        
+				                        movedown:
+				                        
+				                            mov al, 'd'
+				                            mov [ecx], al
+				                            mov ax, curr_row
+				                            inc ax
+				                            mov curr_row, ax
+				                            jmp moveon
+
+				                        moveright:
+				                            mov al, 'r'
+				                            mov [ecx], al
+				                            mov ax, tmp_col
+				                            inc ax
+				                            mov tmp_col, ax
+
+				                        moveon:
+				                        add ecx, 1
+				                        jmp cyclesol
+				                        
+				                done:
+				                output solution_values
+				                output carriage
+				                ENDM
+ 00000000			.CODE
+ 00000000			_start:
+ 00000000			;read input from file
+				;recieve # of rows followed by # of columns
+				inputW_noprompt row
+				inputW_noprompt col
+
+ 00000050  66| A1		mov ax, row
+	   00000010 R
+ 00000056  66| F7 2D		imul col
+	   00000012 R
+ 0000005D  66| A3		mov rowcol, ax
+	   00000014 R
+
+				;fill vankins_mile with input numbers until it reaches row*col
+ 00000063  33 C0		xor eax, eax
+ 00000065  33 C9		xor ecx, ecx
+ 00000067  8D 1D 00000020 R	lea ebx, vankins_mile
+ 0000006D			fill_vankins_mile:
+				    inputW_noprompt ax
+ 00000092  66| 89 03		    mov [ebx], ax
+ 00000095  66| 41		    inc cx
+ 00000097  83 C3 02		    add ebx, 2
+ 0000009A  66| 3B 0D		    cmp cx, rowcol
+	   00000014 R
+ 000000A1  72 CA		    jb fill_vankins_mile
+
+
+ 000000A3  8D 05 00000020 R	lea eax, vankins_mile
+ 000000A9  8D 15 000000E8 R	lea edx, solution_grid
+ 000000AF  33 C9		xor ecx, ecx
+ 000000B1  66| 8B 0D		mov cx, rowcol
+	   00000014 R
+
+ 000000B8			copy_for_solution_grid:
+ 000000B8  8B 18		    mov  ebx, [eax]
+ 000000BA  89 1A		    mov [edx], ebx
+ 000000BC  83 C0 02		    add eax, 2
+ 000000BF  83 C2 02		    add edx, 2
+ 000000C2  49			    dec ecx
+ 000000C3  75 F3		    jne copy_for_solution_grid
+
+				fill_solution_grid
+				display_array vankins_mile
+				display_array solution_grid
+				display_optimal
+
+ 0000049A			PUBLIC _start
+				END
+Microsoft (R) Macro Assembler Version 6.15.8803		    10/22/18 10:43:14
+vankins.asm						     Symbols 2 - 1
+
+
+
+
+Macros:
+
+                N a m e                 Type
+
+atod . . . . . . . . . . . . . .	Proc
+atoi . . . . . . . . . . . . . .	Proc
+display_array  . . . . . . . . .	Proc
+display_optimal  . . . . . . . .	Proc
+dtoa . . . . . . . . . . . . . .	Proc
+fill_solution_grid . . . . . . .	Proc
+getElement . . . . . . . . . . .	Proc
+inputD . . . . . . . . . . . . .	Proc
+inputW_noprompt  . . . . . . . .	Proc
+inputW . . . . . . . . . . . . .	Proc
+input  . . . . . . . . . . . . .	Proc
+itoa . . . . . . . . . . . . . .	Proc
+move_to_index  . . . . . . . . .	Proc
+outputD  . . . . . . . . . . . .	Proc
+outputW_nocarriage . . . . . . .	Proc
+outputW  . . . . . . . . . . . .	Proc
+output . . . . . . . . . . . . .	Proc
+setElement . . . . . . . . . . .	Proc
+sqrt . . . . . . . . . . . . . .	Proc
+
+
+Segments and Groups:
+
+                N a m e                 Size     Length   Align   Combine Class
+
+FLAT . . . . . . . . . . . . . .	GROUP
+STACK  . . . . . . . . . . . . .	32 Bit	 00001000 DWord	  Stack	  'STACK'	 
+_DATA  . . . . . . . . . . . . .	32 Bit	 000001C4 DWord	  Public  'DATA'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 0000049A DWord	  Public  'CODE'	
+
+
+Procedures,  parameters and locals:
+
+                N a m e                 Type     Value    Attr
+
+$$$00001 . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 0000049A Private
+  fill_vankins_mile  . . . . . .	L Near	 0000006D _TEXT	
+  copy_for_solution_grid . . . .	L Near	 000000B8 _TEXT	
+  ??0000 . . . . . . . . . . . .	L Near	 000000D5 _TEXT	
+  ??0001 . . . . . . . . . . . .	L Near	 000000F4 _TEXT	
+  ??0008 . . . . . . . . . . . .	L Near	 0000014D _TEXT	
+  ??0009 . . . . . . . . . . . .	L Near	 00000157 _TEXT	
+  ??000A . . . . . . . . . . . .	L Near	 000001A4 _TEXT	
+  ??000B . . . . . . . . . . . .	L Near	 000001AE _TEXT	
+  ??0002 . . . . . . . . . . . .	L Near	 000001C6 _TEXT	
+  ??0003 . . . . . . . . . . . .	L Near	 000001CE _TEXT	
+  ??0005 . . . . . . . . . . . .	L Near	 000001D4 _TEXT	
+  ??000C . . . . . . . . . . . .	L Near	 0000021B _TEXT	
+  ??000D . . . . . . . . . . . .	L Near	 00000222 _TEXT	
+  ??0004 . . . . . . . . . . . .	L Near	 00000267 _TEXT	
+  ??000E . . . . . . . . . . . .	L Near	 00000278 _TEXT	
+  ??0010 . . . . . . . . . . . .	L Near	 00000280 _TEXT	
+  ??000F . . . . . . . . . . . .	L Near	 000002B1 _TEXT	
+  ??0011 . . . . . . . . . . . .	L Near	 000002C8 _TEXT	
+  ??0012 . . . . . . . . . . . .	L Near	 000002E7 _TEXT	
+  ??0014 . . . . . . . . . . . .	L Near	 000002EF _TEXT	
+  ??0013 . . . . . . . . . . . .	L Near	 00000320 _TEXT	
+  ??0015 . . . . . . . . . . . .	L Near	 00000337 _TEXT	
+  ??0017 . . . . . . . . . . . .	L Near	 00000363 _TEXT	
+  ??001B . . . . . . . . . . . .	L Near	 000003DB _TEXT	
+  ??001C . . . . . . . . . . . .	L Near	 000003E5 _TEXT	
+  ??001D . . . . . . . . . . . .	L Near	 00000437 _TEXT	
+  ??001E . . . . . . . . . . . .	L Near	 00000441 _TEXT	
+  ??0018 . . . . . . . . . . . .	L Near	 00000450 _TEXT	
+  ??0019 . . . . . . . . . . . .	L Near	 00000464 _TEXT	
+  ??001A . . . . . . . . . . . .	L Near	 00000476 _TEXT	
+  ??0016 . . . . . . . . . . . .	L Near	 0000047E _TEXT	
+ExitProcess  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+??0000 . . . . . . . . . . . . .	L Near	 000000D5 _TEXT	
+??0001 . . . . . . . . . . . . .	L Near	 000000F4 _TEXT	
+??0002 . . . . . . . . . . . . .	L Near	 000001C6 _TEXT	
+??0003 . . . . . . . . . . . . .	L Near	 000001CE _TEXT	
+??0004 . . . . . . . . . . . . .	L Near	 00000267 _TEXT	
+??0005 . . . . . . . . . . . . .	L Near	 000001D4 _TEXT	
+??0008 . . . . . . . . . . . . .	L Near	 0000014D _TEXT	
+??0009 . . . . . . . . . . . . .	L Near	 00000157 _TEXT	
+??000A . . . . . . . . . . . . .	L Near	 000001A4 _TEXT	
+??000B . . . . . . . . . . . . .	L Near	 000001AE _TEXT	
+??000C . . . . . . . . . . . . .	L Near	 0000021B _TEXT	
+??000D . . . . . . . . . . . . .	L Near	 00000222 _TEXT	
+??000E . . . . . . . . . . . . .	L Near	 00000278 _TEXT	
+??000F . . . . . . . . . . . . .	L Near	 000002B1 _TEXT	
+??0010 . . . . . . . . . . . . .	L Near	 00000280 _TEXT	
+??0011 . . . . . . . . . . . . .	L Near	 000002C8 _TEXT	
+??0012 . . . . . . . . . . . . .	L Near	 000002E7 _TEXT	
+??0013 . . . . . . . . . . . . .	L Near	 00000320 _TEXT	
+??0014 . . . . . . . . . . . . .	L Near	 000002EF _TEXT	
+??0015 . . . . . . . . . . . . .	L Near	 00000337 _TEXT	
+??0016 . . . . . . . . . . . . .	L Near	 0000047E _TEXT	
+??0017 . . . . . . . . . . . . .	L Near	 00000363 _TEXT	
+??0018 . . . . . . . . . . . . .	L Near	 00000450 _TEXT	
+??0019 . . . . . . . . . . . . .	L Near	 00000464 _TEXT	
+??001A . . . . . . . . . . . . .	L Near	 00000476 _TEXT	
+??001B . . . . . . . . . . . . .	L Near	 000003DB _TEXT	
+??001C . . . . . . . . . . . . .	L Near	 000003E5 _TEXT	
+??001D . . . . . . . . . . . . .	L Near	 00000437 _TEXT	
+??001E . . . . . . . . . . . . .	L Near	 00000441 _TEXT	
+@CodeSize  . . . . . . . . . . .	Number	 00000000h   
+@DataSize  . . . . . . . . . . .	Number	 00000000h   
+@Interface . . . . . . . . . . .	Number	 00000000h   
+@Model . . . . . . . . . . . . .	Number	 00000007h   
+@code  . . . . . . . . . . . . .	Text   	 _TEXT
+@data  . . . . . . . . . . . . .	Text   	 FLAT
+@fardata?  . . . . . . . . . . .	Text   	 FLAT
+@fardata . . . . . . . . . . . .	Text   	 FLAT
+@stack . . . . . . . . . . . . .	Text   	 FLAT
+CR . . . . . . . . . . . . . . .	Number	 0000000Dh   
+LF . . . . . . . . . . . . . . .	Number	 0000000Ah   
+_start . . . . . . . . . . . . .	L Near	 00000000 _TEXT	Public
+atodproc . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+atoiproc . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+carriage . . . . . . . . . . . .	Byte	 00000000 _DATA	
+col  . . . . . . . . . . . . . .	Word	 00000012 _DATA	
+copy_for_solution_grid . . . . .	L Near	 000000B8 _TEXT	
+curr_row . . . . . . . . . . . .	Word	 00000018 _DATA	
+down . . . . . . . . . . . . . .	Word	 0000001C _DATA	
+dtoaproc . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+fill_vankins_mile  . . . . . . .	L Near	 0000006D _TEXT	
+inproc . . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+itoaproc . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+outproc  . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+right  . . . . . . . . . . . . .	Word	 0000001E _DATA	
+rowcol . . . . . . . . . . . . .	Word	 00000014 _DATA	
+row  . . . . . . . . . . . . . .	Word	 00000010 _DATA	
+solution_grid  . . . . . . . . .	Word	 000000E8 _DATA	
+solution_values  . . . . . . . .	Byte	 000001B0 _DATA	
+sqrt_proc  . . . . . . . . . . .	L Near	 00000000 FLAT	External
+text . . . . . . . . . . . . . .	Byte	 00000003 _DATA	
+tmp_col  . . . . . . . . . . . .	Word	 0000001A _DATA	
+tmp  . . . . . . . . . . . . . .	Word	 00000016 _DATA	
+vankins_mile . . . . . . . . . .	Word	 00000020 _DATA	
+
+	   0 Warnings
+	   0 Errors

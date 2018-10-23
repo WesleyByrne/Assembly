@@ -1,0 +1,393 @@
+Microsoft (R) Macro Assembler Version 6.15.8803		    10/17/18 09:41:54
+camera.asm						     Page 1 - 1
+
+
+				.386
+				.MODEL FLAT
+
+				ExitProcess PROTO NEAR32 stdcall, dwExitCode:DWORD
+
+				.STACK  4096
+
+				INCLUDE debug.h
+			      C INCLUDE io.h
+			      C ; IO.H -- header file for I/O macros
+			      C ; 32-bit version for flat memory model
+			      C ; R. Detmer   last revised 8/2000
+			      C .NOLIST     ; turn off listing
+			      C .LIST        ; begin listing
+			      C 
+			      C 
+ = 0000000D		      C CR          EQU    0Dh   ; carriage return character
+ = 0000000A		      C LF          EQU    0Ah   ; linefeed character
+			      C 
+ 00000000		      C .DATA
+ 00000000 0D 0A 00	      C carriage    BYTE     CR, LF, 0
+ 00000003  0000000D [	      C text        BYTE     13 DUP(?)
+	    00
+	   ]
+			      C 
+			      C outputW    	MACRO   var
+			      C                    itoa text, var
+			      C                    output text
+			      C                    output carriage
+			      C                 ENDM
+			      C 
+			      C outputD  	MACRO  var
+			      C                    dtoa text, var
+			      C                    output text
+			      C                    output carriage
+			      C          	ENDM
+			      C 
+			      C inputW          MACRO  prompt, location
+			      C                    output prompt
+			      C                    input text, 8
+			      C                    atoi text
+			      C                    mov location, ax
+			      C                 ENDM
+			      C 
+			      C inputD          MACRO  prompt, location
+			      C                    output prompt
+			      C                    input text, 13
+			      C                    atod text
+			      C                    mov location, eax
+			      C                 ENDM
+			      C 
+				INCLUDE io.h
+			      C ; IO.H -- header file for I/O macros
+			      C ; 32-bit version for flat memory model
+			      C ; R. Detmer   last revised 8/2000
+			      C .NOLIST     ; turn off listing
+			      C .LIST        ; begin listing
+			      C 
+				INCLUDE sqrt.h
+			      C .NOLIST     ; turn off listing
+			      C .LIST       
+			      C 
+
+ 00000010			.DATA
+ 00000010 0000			eyex WORD ? ;input variables
+ 00000012 0000			eyey WORD ?
+ 00000014 0000			eyez WORD ?
+ 00000016 0000			lookx WORD ?
+ 00000018 0000			looky WORD ?
+ 0000001A 0000			lookz WORD ?
+ 0000001C 0000			v_upx WORD ?
+ 0000001E 0000			v_upy WORD ?
+ 00000020 0000			v_upz WORD ?
+
+ 00000022 0000			nx WORD ? ;solution variables
+ 00000024 0000			ny WORD ? 
+ 00000026 0000			nz WORD ? 
+ 00000028 0000			denomn WORD 0
+
+ 0000002A 0000			vx WORD ?  
+ 0000002C 0000			vy WORD ? 
+ 0000002E 0000			vz WORD ? 
+ 00000030 0000			denomv WORD 0
+
+ 00000032 0000			ux WORD ? 
+ 00000034 0000			uy WORD ? 
+ 00000036 0000			uz WORD ? 
+ 00000038 0000			denomu WORD 0
+
+ 0000003A 0000			num WORD ? ;debug
+ 0000003C 0000			denom WORD ? ;debug
+
+ 0000003E  00000028 [		txt BYTE 40 DUP (0) ;print variables
+	    00
+	   ]
+ 00000066  00000028 [		txt_coor BYTE 40 DUP (0)
+	    00
+	   ]
+ 0000008E 78 3A 20 0A 00	txt_letter BYTE "x: ", Lf, 0
+ 00000093 45 6E 74 65 72	prompt BYTE "Enter the d-coordinate of the ", 0
+	   20 74 68 65 20
+	   64 2D 63 6F 6F
+	   72 64 69 6E 61
+	   74 65 20 6F 66
+	   20 74 68 65 20
+	   00
+ 000000B2 63 61 6D 65 72	eyepoint BYTE "camera eyepoint:  ", Lf, 0
+	   61 20 65 79 65
+	   70 6F 69 6E 74
+	   3A 20 20 0A 00
+ 000000C6 6C 6F 6F 6B 20	atpoint BYTE "look at point:  ", Lf, 0
+	   61 74 20 70 6F
+	   69 6E 74 3A 20
+	   20 0A 00
+ 000000D8 63 61 6D 65 72	uppoint BYTE "camera up direction:  ", Lf, 0
+	   61 20 75 70 20
+	   64 69 72 65 63
+	   74 69 6F 6E 3A
+	   20 20 0A 00
+							
+				dotproduct MACRO x, x2, y, y2, z, z2, d ;solution result in d.
+								mov ax, x
+								imul ax, x2
+								mov bx, y
+								imul bx, y2
+								mov cx, z
+								imul cx, z2
+								add ax, bx
+								add ax, cx
+								mov d, ax
+							ENDM
+									
+				input_Coordinates MACRO thing, x, y, z
+								mov prompt+10, 'x'
+								output prompt
+								inputW thing, x
+								mov prompt+10, 'y'
+								output prompt
+								inputW thing, y
+								mov prompt+10, 'z'
+								output prompt
+								inputW thing, z
+								output_Coordinates x, y, z
+							ENDM
+							
+				output_Coordinates	MACRO x, y, z
+								output carriage
+								mov txt_coor, '('
+								itoa txt_coor+1, x
+								mov txt_coor+7, ','
+								itoa txt_coor+8, y
+								mov txt_coor+14, ','
+								itoa txt_coor+15, z
+								mov txt_coor+21, ')'
+								output txt_coor
+								output carriage
+							ENDM
+							
+				output_Sol MACRO numx, denomx, numy, denomy, numz, denomz
+								output txt_letter
+								mov txt, '('
+								itoa txt+5, denomx
+								itoa txt+1, numx
+								mov txt+7, '/'
+								mov txt+11, ','
+								itoa txt+16, denomy
+								itoa txt+12, numy
+								mov txt+18, '/'
+								mov txt+22, ','
+								itoa txt+27, denomz
+								itoa txt+23, numz
+								mov txt+29, '/'
+								mov txt+33, ')'
+								output txt
+								output carriage
+							ENDM
+
+				compute_vcoor MACRO a, b, sol ;n var = a, v_up var = b, sol = v?
+								mov bx, eyex
+								imul bx, b		
+								mov ax, eyey
+								imul ax, a
+								add ax, bx
+								mov sol, ax
+							ENDM
+
+				cross_multiply MACRO a1, a2, b2, b1, sol ;used in computing u
+								mov ax, a1
+								imul ax, b2
+								mov bx, a2
+								imul bx, b1
+								sub ax, bx
+								mov sol, ax
+							ENDM
+							
+ 00000000			.CODE
+ 00000000			_start:
+ 00000000  66| C7 05				mov num, -12345 ;test material
+	   0000003A R
+	   CFC7
+ 00000009  66| C7 05				mov denom, -12 ;test material
+	   0000003C R
+	   FFF4
+						
+						output carriage
+						input_Coordinates eyepoint, eyex, eyey, eyez
+						input_Coordinates atpoint, lookx, looky, lookz
+						input_Coordinates uppoint, v_upx, v_upy, v_upz
+						
+						;Do the Math???
+						
+						;compute n (E-A)
+ 00000464  66| A1				mov ax, eyex 
+	   00000010 R
+ 0000046A  66| 2B 05				sub ax, lookx
+	   00000016 R
+ 00000471  66| A3				mov nx, ax
+	   00000022 R
+ 00000477  66| A1				mov ax, eyey
+	   00000012 R
+ 0000047D  66| 2B 05				sub ax, looky
+	   00000018 R
+ 00000484  66| A3				mov ny, ax
+	   00000024 R
+ 0000048A  66| A1				mov ax, eyez
+	   00000014 R
+ 00000490  66| 2B 05				sub ax, lookz
+	   0000001A R
+ 00000497  66| A3				mov nz, ax
+	   00000026 R
+						
+						dotproduct nx, nx, ny, ny, nz, nz, denomn ; compute denominator for n 
+ 000004D5  66| A1				mov ax, denomn
+	   00000028 R
+ 000004DB  66| A3				mov eyex, ax ;eye and look input mem addresses no longer needed, will be used for scalers in v
+	   00000010 R
+						sqrt denomn
+ 000004ED  66| A3				mov denomn, ax
+	   00000028 R
+						
+						;compute v (???)
+						
+						dotproduct nx, v_upx, ny, v_upy, nz, v_upz, eyey ; compute first scaler
+						;mov ax, eyey ; make it negative
+						;imul ax, -1
+						;mov eyey, ax
+ 0000052B  66| F7 1D				neg eyey ; make it negative 
+	   00000012 R
+						
+						compute_vcoor nx, v_upx, vx 
+						compute_vcoor ny, v_upy, vy
+						compute_vcoor nz, v_upz, vz
+						
+						dotproduct vx, vx, vy, vy, vz, vz, denomv ; compute denominator for v
+						sqrt denomv
+ 000005E8  66| A3				mov denomv, ax
+	   00000030 R
+						
+						;compute u (v x n)
+						cross_multiply vy, vz, nz, ny, ux ;a1*b2 - a2*b1 
+						cross_multiply vz, vx, nx, nz, uy
+						cross_multiply vx, vy, ny, nx, uz
+						
+						dotproduct ux, ux, uy, uy, uz, uz, denomu ; compute denominator for v
+						sqrt denomu
+ 000006A4  66| A3				mov denomu, ax
+	   00000038 R
+						
+						output carriage ;display results
+						output carriage
+ 000006C6  C6 05 0000008E R			mov txt_letter, 'u'
+	   75
+						output_Sol ux, denomu, uy, denomu, uz, denomu
+ 000007B2  C6 05 0000008E R			mov txt_letter, 'v'
+	   76
+						output_Sol vx, denomv, vy, denomv, vz, denomv
+ 0000089E  C6 05 0000008E R			mov txt_letter, 'n'
+	   6E
+						output_Sol nx, denomn, ny, denomn, nz, denomn
+						
+						INVOKE  ExitProcess, 0  ; exit with return code 0
+						
+ 00000991			PUBLIC _start
+				END
+Microsoft (R) Macro Assembler Version 6.15.8803		    10/17/18 09:41:54
+camera.asm						     Symbols 2 - 1
+
+
+
+
+Macros:
+
+                N a m e                 Type
+
+atod . . . . . . . . . . . . . .	Proc
+atoi . . . . . . . . . . . . . .	Proc
+compute_vcoor  . . . . . . . . .	Proc
+cross_multiply . . . . . . . . .	Proc
+dotproduct . . . . . . . . . . .	Proc
+dtoa . . . . . . . . . . . . . .	Proc
+inputD . . . . . . . . . . . . .	Proc
+inputW . . . . . . . . . . . . .	Proc
+input_Coordinates  . . . . . . .	Proc
+input  . . . . . . . . . . . . .	Proc
+itoa . . . . . . . . . . . . . .	Proc
+outputD  . . . . . . . . . . . .	Proc
+outputW  . . . . . . . . . . . .	Proc
+output_Coordinates . . . . . . .	Proc
+output_Sol . . . . . . . . . . .	Proc
+output . . . . . . . . . . . . .	Proc
+sqrt . . . . . . . . . . . . . .	Proc
+
+
+Segments and Groups:
+
+                N a m e                 Size     Length   Align   Combine Class
+
+FLAT . . . . . . . . . . . . . .	GROUP
+STACK  . . . . . . . . . . . . .	32 Bit	 00001000 DWord	  Stack	  'STACK'	 
+_DATA  . . . . . . . . . . . . .	32 Bit	 000000F0 DWord	  Public  'DATA'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 00000991 DWord	  Public  'CODE'	
+
+
+Procedures,  parameters and locals:
+
+                N a m e                 Type     Value    Attr
+
+$$$00001 . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 00000991 Private
+ExitProcess  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+@CodeSize  . . . . . . . . . . .	Number	 00000000h   
+@DataSize  . . . . . . . . . . .	Number	 00000000h   
+@Interface . . . . . . . . . . .	Number	 00000000h   
+@Model . . . . . . . . . . . . .	Number	 00000007h   
+@code  . . . . . . . . . . . . .	Text   	 _TEXT
+@data  . . . . . . . . . . . . .	Text   	 FLAT
+@fardata?  . . . . . . . . . . .	Text   	 FLAT
+@fardata . . . . . . . . . . . .	Text   	 FLAT
+@stack . . . . . . . . . . . . .	Text   	 FLAT
+CR . . . . . . . . . . . . . . .	Number	 0000000Dh   
+LF . . . . . . . . . . . . . . .	Number	 0000000Ah   
+_start . . . . . . . . . . . . .	L Near	 00000000 _TEXT	Public
+atodproc . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+atoiproc . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+atpoint  . . . . . . . . . . . .	Byte	 000000C6 _DATA	
+carriage . . . . . . . . . . . .	Byte	 00000000 _DATA	
+denomn . . . . . . . . . . . . .	Word	 00000028 _DATA	
+denomu . . . . . . . . . . . . .	Word	 00000038 _DATA	
+denomv . . . . . . . . . . . . .	Word	 00000030 _DATA	
+denom  . . . . . . . . . . . . .	Word	 0000003C _DATA	
+dtoaproc . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+eyepoint . . . . . . . . . . . .	Byte	 000000B2 _DATA	
+eyex . . . . . . . . . . . . . .	Word	 00000010 _DATA	
+eyey . . . . . . . . . . . . . .	Word	 00000012 _DATA	
+eyez . . . . . . . . . . . . . .	Word	 00000014 _DATA	
+inproc . . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+itoaproc . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+lookx  . . . . . . . . . . . . .	Word	 00000016 _DATA	
+looky  . . . . . . . . . . . . .	Word	 00000018 _DATA	
+lookz  . . . . . . . . . . . . .	Word	 0000001A _DATA	
+num  . . . . . . . . . . . . . .	Word	 0000003A _DATA	
+nx . . . . . . . . . . . . . . .	Word	 00000022 _DATA	
+ny . . . . . . . . . . . . . . .	Word	 00000024 _DATA	
+nz . . . . . . . . . . . . . . .	Word	 00000026 _DATA	
+outproc  . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+prompt . . . . . . . . . . . . .	Byte	 00000093 _DATA	
+sqrt_proc  . . . . . . . . . . .	L Near	 00000000 FLAT	External
+text . . . . . . . . . . . . . .	Byte	 00000003 _DATA	
+txt_coor . . . . . . . . . . . .	Byte	 00000066 _DATA	
+txt_letter . . . . . . . . . . .	Byte	 0000008E _DATA	
+txt  . . . . . . . . . . . . . .	Byte	 0000003E _DATA	
+uppoint  . . . . . . . . . . . .	Byte	 000000D8 _DATA	
+ux . . . . . . . . . . . . . . .	Word	 00000032 _DATA	
+uy . . . . . . . . . . . . . . .	Word	 00000034 _DATA	
+uz . . . . . . . . . . . . . . .	Word	 00000036 _DATA	
+v_upx  . . . . . . . . . . . . .	Word	 0000001C _DATA	
+v_upy  . . . . . . . . . . . . .	Word	 0000001E _DATA	
+v_upz  . . . . . . . . . . . . .	Word	 00000020 _DATA	
+vx . . . . . . . . . . . . . . .	Word	 0000002A _DATA	
+vy . . . . . . . . . . . . . . .	Word	 0000002C _DATA	
+vz . . . . . . . . . . . . . . .	Word	 0000002E _DATA	
+
+	   0 Warnings
+	   0 Errors
