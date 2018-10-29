@@ -1,0 +1,131 @@
+Microsoft (R) Macro Assembler Version 6.15.8803		    10/28/18 23:02:49
+compute_b.asm						     Page 1 - 1
+
+
+				.386
+				.MODEL FLAT
+
+				PUBLIC	compute_b ; make procedure names visible outside the file containing them
+
+ = [ebp + 8]			number     EQU     [ebp + 8] 
+ = [ebp - 2]			larger       	EQU     [ebp - 2] 
+ = [ebp - 4]			smaller      EQU     [ebp - 4]
+
+ 00000000			.CODE
+
+				; Procedure to find the square root of a number
+				; Parameters: 1) number to find the square root of (assumed positive)
+				; The square root is returned in ax
+
+ 00000000			compute_b 	PROC 	Near32
+
+ 00000000			setup:
+ 00000000  55			    push	ebp
+ 00000001  8B EC			mov	ebp, esp	 ; establish stack frame (ebp contains a memory address)
+				                        
+ 00000003  6A 00		        pushd   0                ; add space on the stack for local variables
+
+ 00000005  53				push    ebx		 ; save the registers used below (can't save them all as ax contains the index of the match)
+ 00000006  51			        push    ecx
+ 00000007  52			        push    edx
+ 00000008  66| 9C			pushf 			 ; save all flags
+				                       
+ 0000000A  66| B9 0000		        mov     cx, 0
+
+ 0000000E			whileLessThan:
+
+				           ; progress is stored in cx
+ 0000000E  66| 41		           inc  cx
+ 00000010  66| 8B C1		           mov  ax, cx
+ 00000013  66| F7 E0		           mul  ax              ; the result is in ax 
+ 00000016  66| 3B 45 08		           cmp  ax, number      ; see if the number squared is still less than the parameter
+				                             
+ 0000001A  7C F2		           jl   whileLessThan
+
+ 0000001C			loopFinished:
+
+				        ; try to improve the result by selecting whether result or (result - 1) is closer to the answer 
+				        ; check the "larger" number
+ 0000001C  66| 8B C1		        mov ax, cx
+ 0000001F  66| F7 E0		        mul ax
+ 00000022  66| 8B 5D 08		        mov bx, number
+ 00000026  66| 2B C3		        sub ax, bx
+ 00000029  66| 89 45 FE		        mov larger, ax ; (ax - bx) -> larger
+
+				        ; check the "smaller" number
+ 0000002D  66| 49		        dec cx
+ 0000002F  66| 8B C1		        mov ax, cx
+ 00000032  66| F7 E0		        mul ax
+ 00000035  66| 2B D8		        sub bx, ax
+ 00000038  66| 89 5D FC		        mov smaller, bx ; (bx - ax) -> smaller
+
+				        ; determine which is closer and report the best value
+ 0000003C  66| 8B 5D FE		        mov bx, larger
+ 00000040  66| 8B 55 FC		        mov dx, smaller
+ 00000044  66| 3B DA		        cmp bx, dx
+ 00000047  66| 8B C1		        mov ax, cx ; cx still contains result - 1
+ 0000004A  7D 02		        jge finish ; if "larger" is larger than "smaller", report result - 1 (don't increment ax)
+ 0000004C  66| 40		        inc ax
+
+ 0000004E			finish:
+
+				        ; of course, pop the items in the reverse order from push
+ 0000004E  66| 9D			popf			; restore flags and registers
+ 00000050  5A			        pop	edx
+ 00000051  59			        pop     ecx
+ 00000052  5B				pop	ebx
+
+ 00000053  8B E5		        mov     esp,ebp		; discard local variables
+
+ 00000055  5D				pop	ebp
+ 00000056  C2 0002			ret	2		; return, discarding parameter
+
+ 00000059			compute_b	ENDP
+
+				END
+
+Microsoft (R) Macro Assembler Version 6.15.8803		    10/28/18 23:02:49
+compute_b.asm						     Symbols 2 - 1
+
+
+
+
+Segments and Groups:
+
+                N a m e                 Size     Length   Align   Combine Class
+
+FLAT . . . . . . . . . . . . . .	GROUP
+_DATA  . . . . . . . . . . . . .	32 Bit	 00000000 DWord	  Public  'DATA'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 00000059 DWord	  Public  'CODE'	
+
+
+Procedures,  parameters and locals:
+
+                N a m e                 Type     Value    Attr
+
+compute_b  . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 00000059 Public
+  setup  . . . . . . . . . . . .	L Near	 00000000 _TEXT	
+  whileLessThan  . . . . . . . .	L Near	 0000000E _TEXT	
+  loopFinished . . . . . . . . .	L Near	 0000001C _TEXT	
+  finish . . . . . . . . . . . .	L Near	 0000004E _TEXT	
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+@CodeSize  . . . . . . . . . . .	Number	 00000000h   
+@DataSize  . . . . . . . . . . .	Number	 00000000h   
+@Interface . . . . . . . . . . .	Number	 00000000h   
+@Model . . . . . . . . . . . . .	Number	 00000007h   
+@code  . . . . . . . . . . . . .	Text   	 _TEXT
+@data  . . . . . . . . . . . . .	Text   	 FLAT
+@fardata?  . . . . . . . . . . .	Text   	 FLAT
+@fardata . . . . . . . . . . . .	Text   	 FLAT
+@stack . . . . . . . . . . . . .	Text   	 FLAT
+larger . . . . . . . . . . . . .	Text   	 [ebp - 2]
+number . . . . . . . . . . . . .	Text   	 [ebp + 8]
+smaller  . . . . . . . . . . . .	Text   	 [ebp - 4]
+
+	   0 Warnings
+	   0 Errors

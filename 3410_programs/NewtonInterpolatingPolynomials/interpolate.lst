@@ -1,0 +1,175 @@
+Microsoft (R) Macro Assembler Version 6.15.8803		    10/28/18 23:02:49
+interpolate.asm						     Page 1 - 1
+
+
+				.386
+				.MODEL FLAT
+
+
+				PUBLIC	interpolate ; make procedure names visible outside the file containing them
+
+
+				INCLUDE debug.h
+			      C INCLUDE io.h
+			      C ; IO.H -- header file for I/O macros
+			      C ; 32-bit version for flat memory model
+			      C ; R. Detmer   last revised 8/2000
+			      C .NOLIST     ; turn off listing
+			      C .LIST        ; begin listing
+			      C 
+			      C 
+ = 0000000D		      C CR          EQU    0Dh   ; carriage return character
+ = 0000000A		      C LF          EQU    0Ah   ; linefeed character
+			      C 
+ 00000000		      C .DATA
+ 00000000 0D 0A 00	      C carriage    BYTE     CR, LF, 0
+ 00000003  0000000D [	      C text        BYTE     13 DUP(?)
+	    00
+	   ]
+			      C 
+			      C outputW    	MACRO   var
+			      C                    itoa text, var
+			      C                    output text
+			      C                    output carriage
+			      C                 ENDM
+			      C 
+			      C outputD  	MACRO  var
+			      C                    dtoa text, var
+			      C                    output text
+			      C                    output carriage
+			      C          	ENDM
+			      C 
+			      C inputW          MACRO  prompt, location
+			      C                    output prompt
+			      C                    input text, 8
+			      C                    atoi text
+			      C                    mov location, ax
+			      C                 ENDM
+			      C 
+			      C inputD          MACRO  prompt, location
+			      C                    output prompt
+			      C                    input text, 13
+			      C                    atod text
+			      C                    mov location, eax
+			      C                 ENDM
+			      C 
+				INCLUDE compute_b.h
+			      C .NOLIST     ; turn off listing
+			      C .LIST       
+			      C 
+
+ = [EBP+16]			array_addr EQU [EBP+16]
+ = [EBP+12]			degree EQU [EBP+12]
+ = [EBP+8]			arr_size EQU [EBP+8]
+
+ 00000000			.CODE
+
+ 00000000			interpolate 	PROC 	Near32
+
+ 00000000			setup:
+
+ 00000000  55			    push	ebp
+ 00000001  8B EC			mov	ebp, esp	 ; establish stack frame (ebp contains a memory address)
+				                        
+ 00000003  6A 00		    pushd   0                ; add space on the stack for local variables
+
+ 00000005  51			    push    ecx      ; save the registers used below (can't save them all as ax contains the index of the match)
+ 00000006  52			    push    edx
+ 00000007  9C				pushfd 			 ; save all flags (pushf needed, d for outputw)
+				                       
+ 00000008  33 C9		    xor     ecx, ecx
+
+ 0000000A			main_code:
+
+				    comp_b arr_size
+				    outputw ax
+
+
+ 00000041			finish:
+
+				    ; of course, pop the items in the reverse order from push
+ 00000041  9D				popfd			    ; restore flags and registers
+ 00000042  5A			    pop	    edx
+ 00000043  59			    pop     ecx
+ 00000044  5B				pop	    ebx
+
+ 00000045  8B E5		    mov     esp,ebp		; discard local variables
+
+ 00000047  5D				pop	ebp
+ 00000048  C2 0006			ret	6		        ; return, discarding parameter
+
+ 0000004B			interpolate	ENDP
+
+				END
+Microsoft (R) Macro Assembler Version 6.15.8803		    10/28/18 23:02:49
+interpolate.asm						     Symbols 2 - 1
+
+
+
+
+Macros:
+
+                N a m e                 Type
+
+atod . . . . . . . . . . . . . .	Proc
+atoi . . . . . . . . . . . . . .	Proc
+comp_b . . . . . . . . . . . . .	Proc
+dtoa . . . . . . . . . . . . . .	Proc
+inputD . . . . . . . . . . . . .	Proc
+inputW . . . . . . . . . . . . .	Proc
+input  . . . . . . . . . . . . .	Proc
+itoa . . . . . . . . . . . . . .	Proc
+outputD  . . . . . . . . . . . .	Proc
+outputW  . . . . . . . . . . . .	Proc
+output . . . . . . . . . . . . .	Proc
+
+
+Segments and Groups:
+
+                N a m e                 Size     Length   Align   Combine Class
+
+FLAT . . . . . . . . . . . . . .	GROUP
+_DATA  . . . . . . . . . . . . .	32 Bit	 00000010 DWord	  Public  'DATA'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 0000004B DWord	  Public  'CODE'	
+
+
+Procedures,  parameters and locals:
+
+                N a m e                 Type     Value    Attr
+
+interpolate  . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 0000004B Public
+  setup  . . . . . . . . . . . .	L Near	 00000000 _TEXT	
+  main_code  . . . . . . . . . .	L Near	 0000000A _TEXT	
+  finish . . . . . . . . . . . .	L Near	 00000041 _TEXT	
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+@CodeSize  . . . . . . . . . . .	Number	 00000000h   
+@DataSize  . . . . . . . . . . .	Number	 00000000h   
+@Interface . . . . . . . . . . .	Number	 00000000h   
+@Model . . . . . . . . . . . . .	Number	 00000007h   
+@code  . . . . . . . . . . . . .	Text   	 _TEXT
+@data  . . . . . . . . . . . . .	Text   	 FLAT
+@fardata?  . . . . . . . . . . .	Text   	 FLAT
+@fardata . . . . . . . . . . . .	Text   	 FLAT
+@stack . . . . . . . . . . . . .	Text   	 FLAT
+CR . . . . . . . . . . . . . . .	Number	 0000000Dh   
+LF . . . . . . . . . . . . . . .	Number	 0000000Ah   
+arr_size . . . . . . . . . . . .	Text   	 [EBP+8]
+array_addr . . . . . . . . . . .	Text   	 [EBP+16]
+atodproc . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+atoiproc . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+carriage . . . . . . . . . . . .	Byte	 00000000 _DATA	
+compute_b  . . . . . . . . . . .	L Near	 00000000 FLAT	External
+degree . . . . . . . . . . . . .	Text   	 [EBP+12]
+dtoaproc . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+inproc . . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+itoaproc . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+outproc  . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+text . . . . . . . . . . . . . .	Byte	 00000003 _DATA	
+
+	   0 Warnings
+	   0 Errors

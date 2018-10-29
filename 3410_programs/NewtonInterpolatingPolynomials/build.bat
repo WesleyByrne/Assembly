@@ -16,7 +16,9 @@ set LIBS=sqrt.obj interpolate_sort.obj atofproc.obj ftoaproc.obj compare_floats.
 
 ml -Zi -c -coff -Fl %EXE_NAME%_driver.asm
 ml -Zi -c -coff -Fl compute_b.asm
-ml -Zi -c -coff -Fl interpolate.asm
+ml -Zi -c -coff -Fl %EXE_NAME%.asm
 link /libpath:%LIB_DIRS% %EXE_NAME%_driver.obj compute_b.obj interpolate.obj %LIBS% io.obj kernel32.lib /debug /out:%EXE_NAME%.exe /subsystem:console /entry:start
+
+::%EXE_NAME%
 %EXE_NAME% <points_1.txt
 
