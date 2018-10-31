@@ -5,12 +5,14 @@ ExitProcess PROTO NEAR32 stdcall, dwExitCode:DWORD
 
 .STACK  4096
 
-INCLUDE debug.h
 INCLUDE io.h
-INCLUDE sqrt.h
 INCLUDE interpolate.h
 INCLUDE float.h
 INCLUDE sort_points.h
+
+CR          EQU    0Dh   ; carriage return character
+LF          EQU    0Ah   ; linefeed character
+
 .DATA
 
 array REAL4 20 DUP (?)
@@ -20,49 +22,14 @@ degree REAL4 ?
 
 array_size WORD ?
 
-
+carriage    BYTE     CR, LF, 0
+text        BYTE     13 DUP(?)
 
 p1 BYTE "Enter the x-coordinate of the desired interpolated y.", Lf, 0
 p2 BYTE "Enter the degree of the interpolating polynomial.", Lf, 0
 p3 BYTE "You may enter up to 20 points, one at a time.", Lf, 0
 p4 BYTE "enter 'q' to quit", Lf, 0
-
-
-;outputw_nocarriage    	MACRO   var
- ;                   itoa text, var
-  ;                  output text
-   ;             ENDM
-
-;inputw_noprompt         MACRO  location
- ;                   input text, 8
-  ;                  atoi text
-   ;                 mov location, ax
-    ;            ENDM
-
-display_float_array MACRO to_display, sz
-                    local display, done
-                    output carriage
-                    
-                    xor ecx, ecx
-                    lea ebx, to_display
-                    outputw sz
-                    display:
-                        cmp cx, sz
-                        je done
-                 
-                        mov ax, 3
-                        mov dx, 6
-                        ftoa [ebx], ax, dx, text 
-                        
-                        output text
-                        output carriage
-                        add ebx, 4
-                        inc cx
-
-                        jmp display
-                    done:
-
-                ENDM
+r1 BYTE "The result:             ", cr, lf, 0
 
 .CODE
 _start:
@@ -92,7 +59,7 @@ fill_array:
     cmp [text], 'q'
     je fin
 
-    atof text, DWORD PTR [ebx]
+    atof text, REAL4 PTR [ebx]
     add ebx, 4
     inc cx
     jmp fill_array
@@ -110,11 +77,18 @@ mov array_size, ax
 sort_points array, xcoor, tol, array_size
 print_points array, array_size
 
-interpolate_call array, array_size, degree
+interpolate_call array, array_size, xcoor, tol, degree
 
-;non-header call: 
-;push var
-;call proc
+ftoa eax, 5, 7, text
+lea esi, text
+lea edi, r1 
+add edi, 12   
+mov ecx, 8 
+rep movsb  
+
+output carriage
+output r1
+output carriage
 
 PUBLIC _start
 END

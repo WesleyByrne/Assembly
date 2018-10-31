@@ -1,24 +1,51 @@
 .386
 .MODEL FLAT
 
-PUBLIC	compute_b ; make procedure names visible outside the file containing them
+PUBLIC	compute_b
 
-number     EQU     [ebp + 8] 
-larger       	EQU     [ebp - 2] 
-smaller      EQU     [ebp - 4]
+;there's a fld1 for 1.0, and fldz for 0.0
+array_addr EQU [ebp + 16] 
+n EQU [ebp+12]
+m EQU [ebp+8]
+tmp_float EQU [ebp - 4] 
+a_val EQU [ebp - 8]
+b_val EQU [ebp - 12]
 
+retr789 MACRO index 
+        xor eax, eax
+        mov ebx, index
+        mov eax, 8
+        imul ebx
+        mov edi, eax
+        mov ebx, array_addr
+        ENDM
+
+retrieve_x MACRO index ;store in eax
+        retr789 index
+        mov eax, [ebx+edi] 
+        ENDM
+
+retrieve_y MACRO index 
+        retr789 index
+        mov eax, [ebx+edi+4] 
+        ENDM
+
+call_computeb MACRO n_, m_
+        push array_addr
+        push n_ 
+        push m_ 
+        call compute_b 
+ENDM
 .CODE
-
-; Procedure to find the square root of a number
-; Parameters: 1) number to find the square root of (assumed positive)
-; The square root is returned in ax
 
 compute_b 	PROC 	Near32
 
 setup:
-    push	ebp
+        push	ebp
 	mov	ebp, esp	 ; establish stack frame (ebp contains a memory address)
                         
+        pushd   0                
+        pushd   0                
         pushd   0                ; add space on the stack for local variables
 
 	push    ebx		 ; save the registers used below (can't save them all as ax contains the index of the match)
@@ -28,41 +55,49 @@ setup:
                        
         mov     cx, 0
 
-whileLessThan:
+codestuff:
+        xor eax, eax
+        mov ax, m
+        cmp ax, n 
+        je f_x 
 
-           ; progress is stored in cx
-           inc  cx
-           mov  ax, cx
-           mul  ax              ; the result is in ax 
-           cmp  ax, number      ; see if the number squared is still less than the parameter
-                             
-           jl   whileLessThan
-
-loopFinished:
-
-        ; try to improve the result by selecting whether result or (result - 1) is closer to the answer 
-        ; check the "larger" number
-        mov ax, cx
-        mul ax
-        mov bx, number
-        sub ax, bx
-        mov larger, ax ; (ax - bx) -> larger
-
-        ; check the "smaller" number
-        dec cx
-        mov ax, cx
-        mul ax
-        sub bx, ax
-        mov smaller, bx ; (bx - ax) -> smaller
-
-        ; determine which is closer and report the best value
-        mov bx, larger
-        mov dx, smaller
-        cmp bx, dx
-        mov ax, cx ; cx still contains result - 1
-        jge finish ; if "larger" is larger than "smaller", report result - 1 (don't increment ax)
         inc ax
 
+        call_computeb n, eax
+        mov a_val, eax
+        
+        xor eax, eax
+        mov ax, n 
+        dec ax
+
+        call_computeb eax, m
+        mov b_val, eax
+
+        fld REAL4 ptr a_val
+        fld REAL4 ptr b_val
+
+        fsub
+
+        retrieve_x n 
+        mov tmp_float, eax
+        fld REAL4 ptr tmp_float
+
+        retrieve_x m
+        mov tmp_float, eax
+        fld REAL4 ptr tmp_float
+
+
+        fsub
+        fdiv 
+
+        fstp REAL4 PTR tmp_float
+        mov eax, tmp_float
+        
+        jmp finish
+f_x:
+        ;retrieve array's coordinate y value and return it 
+        retrieve_y n
+        
 finish:
 
         ; of course, pop the items in the reverse order from push
@@ -74,7 +109,7 @@ finish:
         mov     esp,ebp		; discard local variables
 
 	pop	ebp
-	ret	2		; return, discarding parameter
+	ret	12		; return, discarding parameter
 
 compute_b	ENDP
 

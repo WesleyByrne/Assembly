@@ -3,8 +3,10 @@
 
 EXTRN compute_b:Near32
 
-comp_b       	MACRO   number
-                   push number 
+compute_b_call       	MACRO   addr, n, m
+                   push addr
+                   push n 
+                   push m 
                    call compute_b
                 ENDM
 

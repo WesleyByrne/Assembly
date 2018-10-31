@@ -21,4 +21,5 @@ link /libpath:%LIB_DIRS% %EXE_NAME%_driver.obj compute_b.obj interpolate.obj %LI
 
 ::%EXE_NAME%
 %EXE_NAME% <points_1.txt
+%EXE_NAME% <points_2.txt
 
