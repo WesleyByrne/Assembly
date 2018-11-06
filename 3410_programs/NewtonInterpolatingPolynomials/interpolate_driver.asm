@@ -79,7 +79,7 @@ print_points array, array_size
 
 interpolate_call array, array_size, xcoor, tol, degree
 
-ftoa eax, 5, 7, text
+ftoa eax, 3, 7, text
 lea esi, text
 lea edi, r1 
 add edi, 12   
