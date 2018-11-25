@@ -1,0 +1,105 @@
+Microsoft (R) Macro Assembler Version 6.15.8803		    11/24/18 11:32:26
+fallout_driver.asm					     Page 1 - 1
+
+
+				.386
+				.MODEL FLAT
+
+				ExitProcess PROTO NEAR32 stdcall, dwExitCode:DWORD
+
+				.STACK  4096
+
+				INCLUDE io.h
+			      C ; IO.H -- header file for I/O macros
+			      C ; 32-bit version for flat memory model
+			      C ; R. Detmer   last revised 8/2000
+			      C .NOLIST     ; turn off listing
+			      C .LIST        ; begin listing
+			      C 
+				INCLUDE fallout_procs.h
+			      C .NOLIST
+Microsoft (R) Macro Assembler Version 6.15.8803		    11/24/18 11:32:26
+fallout_driver.asm					     Symbols 2 - 1
+
+
+
+
+Macros:
+
+                N a m e                 Type
+
+analyze_array_matches  . . . . .	Proc
+atod . . . . . . . . . . . . . .	Proc
+atoi . . . . . . . . . . . . . .	Proc
+dtoa . . . . . . . . . . . . . .	Proc
+inputw . . . . . . . . . . . . .	Proc
+input  . . . . . . . . . . . . .	Proc
+itoa . . . . . . . . . . . . . .	Proc
+output_str_array . . . . . . . .	Proc
+output . . . . . . . . . . . . .	Proc
+
+
+Segments and Groups:
+
+                N a m e                 Size     Length   Align   Combine Class
+
+FLAT . . . . . . . . . . . . . .	GROUP
+STACK  . . . . . . . . . . . . .	32 Bit	 00001000 DWord	  Stack	  'STACK'	 
+_DATA  . . . . . . . . . . . . .	32 Bit	 000001B7 DWord	  Public  'DATA'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 000001D5 DWord	  Public  'CODE'	
+
+
+Procedures,  parameters and locals:
+
+                N a m e                 Type     Value    Attr
+
+$$$00001 . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 000001D5 Private
+  fill_array . . . . . . . . . .	L Near	 00000009 _TEXT	
+  fin  . . . . . . . . . . . . .	L Near	 00000065 _TEXT	
+  filter_pws . . . . . . . . . .	L Near	 000000DE _TEXT	
+ExitProcess  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+@CodeSize  . . . . . . . . . . .	Number	 00000000h   
+@DataSize  . . . . . . . . . . .	Number	 00000000h   
+@Interface . . . . . . . . . . .	Number	 00000000h   
+@Model . . . . . . . . . . . . .	Number	 00000007h   
+@code  . . . . . . . . . . . . .	Text   	 _TEXT
+@data  . . . . . . . . . . . . .	Text   	 FLAT
+@fardata?  . . . . . . . . . . .	Text   	 FLAT
+@fardata . . . . . . . . . . . .	Text   	 FLAT
+@stack . . . . . . . . . . . . .	Text   	 FLAT
+CR . . . . . . . . . . . . . . .	Number	 0000000Dh   
+LEN  . . . . . . . . . . . . . .	Number	 0000000Dh   
+LF . . . . . . . . . . . . . . .	Number	 0000000Ah   
+MAX  . . . . . . . . . . . . . .	Number	 00000014h   
+_carriage  . . . . . . . . . . .	Byte	 0000010A _DATA	
+_start . . . . . . . . . . . . .	L Near	 00000000 _TEXT	Public
+analyze_str_proc . . . . . . . .	L Near	 00000000 FLAT	External
+atodproc . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+atoiproc . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+char_matches . . . . . . . . . .	Word	 00000108 _DATA	
+dtoaproc . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+enterastring . . . . . . . . . .	Byte	 0000011A _DATA	
+entercharmatches . . . . . . . .	Byte	 0000017F _DATA	
+enterindexpsw  . . . . . . . . .	Byte	 0000014D _DATA	
+fill_array . . . . . . . . . . .	L Near	 00000009 _TEXT	
+filter_pws . . . . . . . . . . .	L Near	 000000DE _TEXT	
+fin  . . . . . . . . . . . . . .	L Near	 00000065 _TEXT	
+inproc . . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+itoaproc . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+num_strs . . . . . . . . . . . .	Word	 00000104 _DATA	
+numberstringsentered . . . . . .	Byte	 0000012B _DATA	
+outproc  . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+output_str_proc  . . . . . . . .	L Near	 00000000 FLAT	External
+prompt . . . . . . . . . . . . .	Byte	 000001AE _DATA	
+pw_index . . . . . . . . . . . .	Word	 00000106 _DATA	
+str_array  . . . . . . . . . . .	Byte	 00000000 _DATA	
+txt  . . . . . . . . . . . . . .	Byte	 0000010D _DATA	
+
+	   0 Warnings
+	   0 Errors

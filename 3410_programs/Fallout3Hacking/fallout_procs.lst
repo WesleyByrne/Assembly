@@ -1,0 +1,312 @@
+Microsoft (R) Macro Assembler Version 6.15.8803		    11/24/18 11:32:26
+fallout_procs.asm					     Page 1 - 1
+
+
+				.386
+				.MODEL FLAT
+
+				PUBLIC	output_str_proc, analyze_str_proc
+
+				include io.h
+			      C ; IO.H -- header file for I/O macros
+			      C ; 32-bit version for flat memory model
+			      C ; R. Detmer   last revised 8/2000
+			      C .NOLIST     ; turn off listing
+			      C .LIST        ; begin listing
+			      C 
+				include str_utils.h
+			      C .NOLIST
+			      C .LIST
+			      C 
+
+				retr_addr MACRO ind, len, dest
+					push eax
+					push edx
+					xor eax, eax
+					mov ax, ind
+					mul len
+					sub ax, len
+					mov dest, eax
+					mov eax, [ebp+18]
+					add dest, eax
+					pop edx
+					pop eax
+					ENDM
+
+				swap_positions MACRO
+					inc cx
+					retr_addr cx, WORD PTR [ebp+14], [ebp-8]
+					push ebx
+					push [ebp-8]
+					call swap_str_proc
+					ENDM
+
+
+ 00000000			.code
+
+				;char_matches [ebp+8], pw_index [ebp+10], num_strs [ebp+12], length [ebp+14], str_array [ebp+18]; new list size store in eax
+ 00000000			analyze_str_proc 	PROC 	Near32 
+ 00000000				setup:
+ 00000000  55					push ebp
+ 00000001  8B EC				mov	ebp, esp                 ; establish stack frame (ebp contains a memory address)
+ 00000003  6A 00				pushd 0						 ; main addr (last addr, with pw in it)
+ 00000005  6A 00				pushd 0                      ; tmp addr
+ 00000007  66| 6A 00				pushw 0						 ; swap last pw back boolean
+ 0000000A  53					push ebx					 ; save registers
+ 0000000B  51					push ecx
+ 0000000C  52					push edx
+ 0000000D  9C					pushfd                       ; save all flags
+ 0000000E				code:
+						
+ 0000000E  33 C9				xor ecx, ecx ;new str_array length, and curr. will be saved in eax
+ 00000010  33 D2				xor edx, edx ;index
+ 00000012  8B 5D 12				mov ebx, [ebp+18]
+						retr_addr WORD PTR [ebp+10], WORD PTR [ebp+14], [ebp-8] ; pw_index
+						retr_addr WORD PTR [ebp+12], WORD PTR [ebp+14], [ebp-4] ; last string index
+ 0000004B  66| 8B 45 0A				mov ax, [ebp+10]
+ 0000004F  66| 48				dec ax
+ 00000051  66| 89 45 0A				mov [ebp+10], ax ; decrement pw_index to 0-based
+						
+ 00000055  FF 75 FC				push [ebp-4]
+ 00000058  FF 75 F8				push [ebp-8]
+ 0000005B  E8 000000C4				call swap_str_proc ; move pw_index to last string position
+
+ 00000060  FF 75 F8				push [ebp-8]
+ 00000063  FF 75 FC				push [ebp-4]
+ 00000066  E8 00000089				call num_char_matches ; compare final word with pw_index
+					
+ 0000006B  66| 3B 45 08				cmp ax, [ebp+8] 
+ 0000006F  75 06				jne _code
+ 00000071  66| C7 45 F6				mov WORD PTR [ebp-10], 1 ; set "boolean" to true if char matches
+	   0001
+
+ 00000077				_code:
+ 00000077  66| 3B 55 0A				cmp dx, WORD PTR [ebp+10] ;skip pw_index position
+ 0000007B  74 34				je no_match
+					
+ 0000007D  53					push ebx
+ 0000007E  FF 75 FC				push [ebp-4]
+ 00000081  E8 0000006E				call num_char_matches
+ 00000086  66| 3B 45 08				cmp ax, [ebp+8]
+ 0000008A  75 25				jne no_match
+						swap_positions ; mov current string to new array position if matches align
+
+ 000000B1				no_match:
+ 000000B1  03 5D 0E				add ebx, [ebp+14]
+ 000000B4  66| 42				inc dx
+ 000000B6  66| 3B 55 0C				cmp dx, [ebp+12]
+ 000000BA  72 BB				jb _code
+
+ 000000BC				mov_final_pw:
+ 000000BC  66| 83 7D F6				cmp WORD PTR [ebp-10], 1 ; if "boolean" is true, 
+	   01
+ 000000C1  75 25				jne finish				 ; mov the last word to the last position in the new string
+						swap_positions
+						
+ 000000E8				finish:                         ; pop the items in the reverse order from push
+ 000000E8  8B C1				mov eax, ecx
+ 000000EA  9D					popfd
+ 000000EB  5A					pop edx			            ; restore flags and registers
+ 000000EC  59					pop ecx
+ 000000ED  5B					pop ebx
+ 000000EE  8B E5				mov esp,ebp                 ; discard local variables
+ 000000F0  5D					pop	ebp
+ 000000F1  C2 000C				ret	12		                ; return, discarding parameter
+ 000000F4			analyze_str_proc ENDP
+
+ 000000F4			num_char_matches 	PROC 	Near32 ;source [ebp+8], dest [ebp+12]; result in eax
+ 000000F4				setup:
+ 000000F4  55					push ebp
+ 000000F5  8B EC				mov	ebp, esp                 ; establish stack frame (ebp contains a memory address)
+ 000000F7  51					push ecx 					 ; save flags and registers
+ 000000F8  56					push esi
+ 000000F9  57					push edi
+ 000000FA  9C					pushfd 
+ 000000FB				code:
+ 000000FB  FF 75 08				push [ebp+8]
+ 000000FE  E8 00000000 E			call strlen_proc
+ 00000103  66| 8B C8				mov cx, ax
+ 00000106  66| 41				inc cx
+ 00000108  33 C0				xor eax, eax
+ 0000010A  8B 75 08				mov esi, [ebp+8]
+ 0000010D  8B 7D 0C				mov edi, [ebp+12]
+ 00000110  EB 02				jmp loop_str
+
+ 00000112				equa:
+ 00000112  66| 40				inc ax
+ 00000114				loop_str:
+ 00000114  F2/ A6				repne cmpsb
+ 00000116  66| 41				inc cx
+ 00000118  E2 F8				loop equa
+						
+ 0000011A				finish:                         ; pop the items in the reverse order from push
+ 0000011A  9D					popfd 					    ; restore flags and registers
+ 0000011B  5F					pop edi						
+ 0000011C  5E					pop esi
+ 0000011D  59					pop ecx
+ 0000011E  8B E5				mov esp,ebp                 ; discard local variables
+ 00000120  5D					pop	ebp
+ 00000121  C2 0008				ret	8		                ; return, discarding parameter
+ 00000124			num_char_matches ENDP
+
+ 00000124			swap_str_proc 	PROC 	Near32 ;source [ebp+8], dest [ebp+12]
+ 00000124				setup:
+ 00000124  55					push ebp
+ 00000125  8B EC				mov	ebp, esp                 ; establish stack frame (ebp contains a memory address)
+ 00000127  60					pushad						 ; save all registers
+ 00000128  9C					pushfd                       ; save all flags
+ 00000129				code:
+ 00000129  33 C0				xor eax, eax
+ 0000012B  FF 75 08				push [ebp+8]
+ 0000012E  E8 00000000 E			call strlen_proc
+ 00000133  8B C8				mov ecx, eax
+ 00000135  8B 7D 08				mov edi, [ebp+8]
+ 00000138  8B 75 0C				mov esi, [ebp+12]
+ 0000013B				while_loop:
+ 0000013B  AC					lodsb ;load tmp char
+ 0000013C  4E					dec esi ;reset source position
+ 0000013D  87 FE				xchg edi, esi
+ 0000013F  A4					movsb ;mov dest char to source
+ 00000140  87 F7				xchg esi, edi
+ 00000142  4F					dec edi ;reset dest position
+ 00000143  AA					stosb ;store tmp char
+ 00000144  83 F9 00				cmp ecx, 0
+ 00000147  49					dec ecx
+ 00000148  75 F1				jne while_loop
+ 0000014A  8B 7D 08				mov edi, [ebp+8]
+ 0000014D  8B 75 0C				mov esi, [ebp+12]
+ 00000150				finish:                         ; pop the items in the reverse order from push
+ 00000150  9D					popfd			            ; restore flags and registers
+ 00000151  61					popad
+ 00000152  8B E5				mov esp,ebp                 ; discard local variables
+ 00000154  5D					pop	ebp
+ 00000155  C2 0008				ret	8		                ; return, discarding parameter
+ 00000158			swap_str_proc ENDP
+
+ 00000158			output_str_proc 	PROC 	Near32 ; num_strs [ebp+8], length [ebp+10], str_array [ebp+14]
+ 00000158				setup:
+ 00000158  55					push ebp
+ 00000159  8B EC				mov	ebp, esp                 ; establish stack frame (ebp contains a memory address)
+ 0000015B  68 00000A0D				push DWORD PTR 0A0Dh         ; carriage return [ebp-4]
+ 00000160  60					pushad						 ; save all registers
+ 00000161  9C					pushfd                       ; save all flags
+ 00000162				code:
+ 00000162  66| 8B 4D 08				mov cx, [ebp+8]
+ 00000166  8B 5D 0E				mov ebx, [ebp+14]
+ 00000169					outputloop:
+ 00000169  83 F9 00					cmp ecx, 0
+ 0000016C  74 1C					je finish
+							output [ebx]
+							output [ebp-4]
+ 00000183  03 5D 0A					add ebx, [ebp+10]
+ 00000186  66| 49					dec cx
+ 00000188  EB DF					jmp outputloop
+ 0000018A				finish:                         ; pop the items in the reverse order from push
+ 0000018A  9D					popfd			            ; restore flags and registers
+ 0000018B  61					popad
+ 0000018C  8B E5				mov esp,ebp                 ; discard local variables
+ 0000018E  5D					pop	ebp
+ 0000018F  C2 000A				ret	10		                ; return, discarding parameter
+ 00000192			output_str_proc	ENDP
+
+				END
+Microsoft (R) Macro Assembler Version 6.15.8803		    11/24/18 11:32:26
+fallout_procs.asm					     Symbols 2 - 1
+
+
+
+
+Macros:
+
+                N a m e                 Type
+
+append . . . . . . . . . . . . .	Proc
+atod . . . . . . . . . . . . . .	Proc
+atoi . . . . . . . . . . . . . .	Proc
+compare  . . . . . . . . . . . .	Proc
+dtoa . . . . . . . . . . . . . .	Proc
+equals . . . . . . . . . . . . .	Proc
+index_of . . . . . . . . . . . .	Proc
+input  . . . . . . . . . . . . .	Proc
+itoa . . . . . . . . . . . . . .	Proc
+output . . . . . . . . . . . . .	Proc
+replace  . . . . . . . . . . . .	Proc
+retr_addr  . . . . . . . . . . .	Proc
+strcopy  . . . . . . . . . . . .	Proc
+strlen . . . . . . . . . . . . .	Proc
+substring  . . . . . . . . . . .	Proc
+swap_positions . . . . . . . . .	Proc
+to_lower . . . . . . . . . . . .	Proc
+to_upper . . . . . . . . . . . .	Proc
+
+
+Segments and Groups:
+
+                N a m e                 Size     Length   Align   Combine Class
+
+FLAT . . . . . . . . . . . . . .	GROUP
+_DATA  . . . . . . . . . . . . .	32 Bit	 00000000 DWord	  Public  'DATA'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 00000192 DWord	  Public  'CODE'	
+
+
+Procedures,  parameters and locals:
+
+                N a m e                 Type     Value    Attr
+
+analyze_str_proc . . . . . . . .	P Near	 00000000 _TEXT	Length= 000000F4 Public
+  setup  . . . . . . . . . . . .	L Near	 00000000 _TEXT	
+  code . . . . . . . . . . . . .	L Near	 0000000E _TEXT	
+  _code  . . . . . . . . . . . .	L Near	 00000077 _TEXT	
+  no_match . . . . . . . . . . .	L Near	 000000B1 _TEXT	
+  mov_final_pw . . . . . . . . .	L Near	 000000BC _TEXT	
+  finish . . . . . . . . . . . .	L Near	 000000E8 _TEXT	
+num_char_matches . . . . . . . .	P Near	 000000F4 _TEXT	Length= 00000030 Public
+  setup  . . . . . . . . . . . .	L Near	 000000F4 _TEXT	
+  code . . . . . . . . . . . . .	L Near	 000000FB _TEXT	
+  equa . . . . . . . . . . . . .	L Near	 00000112 _TEXT	
+  loop_str . . . . . . . . . . .	L Near	 00000114 _TEXT	
+  finish . . . . . . . . . . . .	L Near	 0000011A _TEXT	
+output_str_proc  . . . . . . . .	P Near	 00000158 _TEXT	Length= 0000003A Public
+  setup  . . . . . . . . . . . .	L Near	 00000158 _TEXT	
+  code . . . . . . . . . . . . .	L Near	 00000162 _TEXT	
+  outputloop . . . . . . . . . .	L Near	 00000169 _TEXT	
+  finish . . . . . . . . . . . .	L Near	 0000018A _TEXT	
+swap_str_proc  . . . . . . . . .	P Near	 00000124 _TEXT	Length= 00000034 Public
+  setup  . . . . . . . . . . . .	L Near	 00000124 _TEXT	
+  code . . . . . . . . . . . . .	L Near	 00000129 _TEXT	
+  while_loop . . . . . . . . . .	L Near	 0000013B _TEXT	
+  finish . . . . . . . . . . . .	L Near	 00000150 _TEXT	
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+@CodeSize  . . . . . . . . . . .	Number	 00000000h   
+@DataSize  . . . . . . . . . . .	Number	 00000000h   
+@Interface . . . . . . . . . . .	Number	 00000000h   
+@Model . . . . . . . . . . . . .	Number	 00000007h   
+@code  . . . . . . . . . . . . .	Text   	 _TEXT
+@data  . . . . . . . . . . . . .	Text   	 FLAT
+@fardata?  . . . . . . . . . . .	Text   	 FLAT
+@fardata . . . . . . . . . . . .	Text   	 FLAT
+@stack . . . . . . . . . . . . .	Text   	 FLAT
+append_proc  . . . . . . . . . .	L Near	 00000000 FLAT	External
+atodproc . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+atoiproc . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+compare_proc . . . . . . . . . .	L Near	 00000000 FLAT	External
+dtoaproc . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+equals_proc  . . . . . . . . . .	L Near	 00000000 FLAT	External
+indexof_proc . . . . . . . . . .	L Near	 00000000 FLAT	External
+inproc . . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+itoaproc . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+outproc  . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+replace_proc . . . . . . . . . .	L Near	 00000000 FLAT	External
+strcopy_proc . . . . . . . . . .	L Near	 00000000 FLAT	External
+strlen_proc  . . . . . . . . . .	L Near	 00000000 FLAT	External
+substring_proc . . . . . . . . .	L Near	 00000000 FLAT	External
+tolower_proc . . . . . . . . . .	L Near	 00000000 FLAT	External
+toupper_proc . . . . . . . . . .	L Near	 00000000 FLAT	External
+
+	   0 Warnings
+	   0 Errors
