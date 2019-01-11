@@ -1,4 +1,4 @@
-Microsoft (R) Macro Assembler Version 6.15.8803		    11/24/18 11:32:26
+Microsoft (R) Macro Assembler Version 6.15.8803		    12/10/18 09:10:03
 fallout_driver.asm					     Page 1 - 1
 
 
@@ -18,7 +18,7 @@ fallout_driver.asm					     Page 1 - 1
 			      C 
 				INCLUDE fallout_procs.h
 			      C .NOLIST
-Microsoft (R) Macro Assembler Version 6.15.8803		    11/24/18 11:32:26
+Microsoft (R) Macro Assembler Version 6.15.8803		    12/10/18 09:10:03
 fallout_driver.asm					     Symbols 2 - 1
 
 

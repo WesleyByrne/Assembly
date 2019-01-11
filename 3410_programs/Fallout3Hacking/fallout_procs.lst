@@ -1,4 +1,4 @@
-Microsoft (R) Macro Assembler Version 6.15.8803		    11/24/18 11:32:26
+Microsoft (R) Macro Assembler Version 6.15.8803		    12/10/18 09:10:03
 fallout_procs.asm					     Page 1 - 1
 
 
@@ -125,18 +125,18 @@ fallout_procs.asm					     Page 1 - 1
  000000FB				code:
  000000FB  FF 75 08				push [ebp+8]
  000000FE  E8 00000000 E			call strlen_proc
- 00000103  66| 8B C8				mov cx, ax
- 00000106  66| 41				inc cx
+ 00000103  66| 8B C8				mov cx, ax ;retr string length
+ 00000106  66| 41				inc cx ;+1 for str matching
  00000108  33 C0				xor eax, eax
- 0000010A  8B 75 08				mov esi, [ebp+8]
- 0000010D  8B 7D 0C				mov edi, [ebp+12]
+ 0000010A  8B 75 08				mov esi, [ebp+8] 
+ 0000010D  8B 7D 0C				mov edi, [ebp+12] ;set strings
  00000110  EB 02				jmp loop_str
 
  00000112				equa:
- 00000112  66| 40				inc ax
+ 00000112  66| 40				inc ax ;num char matches
  00000114				loop_str:
  00000114  F2/ A6				repne cmpsb
- 00000116  66| 41				inc cx
+ 00000116  66| 41				inc cx ;fix position before loop decrements cx
  00000118  E2 F8				loop equa
 						
  0000011A				finish:                         ; pop the items in the reverse order from push
@@ -210,7 +210,7 @@ fallout_procs.asm					     Page 1 - 1
  00000192			output_str_proc	ENDP
 
 				END
-Microsoft (R) Macro Assembler Version 6.15.8803		    11/24/18 11:32:26
+Microsoft (R) Macro Assembler Version 6.15.8803		    12/10/18 09:10:03
 fallout_procs.asm					     Symbols 2 - 1
 
 

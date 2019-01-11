@@ -17,4 +17,4 @@ set LIBS=str_utils.obj
 ml -Zi -c -coff -Fl fallout_driver.asm
 ml -Zi -c -coff -Fl fallout_procs.asm
 link /libpath:%LIB_DIRS% fallout_driver.obj fallout_procs.obj %LIBS% io.obj kernel32.lib /debug /out:%EXE_NAME%.exe /subsystem:console /entry:start
-%EXE_NAME% <fallout.txt
+%EXE_NAME% <fallout3.txt
